@@ -1,0 +1,15 @@
+#version 330 core
+ 
+in vec3 vertexPosition_modelspace;
+// uniforms (P, V, M)
+uniform mat4 P;
+uniform mat4 V;
+uniform mat4 M;
+
+out vec3 texcoords;
+
+void main () {
+	texcoords = vertexPosition_modelspace;
+	gl_Position = P * V * M * vec4(vertexPosition_modelspace, 1.0);
+}
+ 

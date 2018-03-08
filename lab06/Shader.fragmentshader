@@ -1,0 +1,46 @@
+#version 330 core
+ 
+// output data
+out vec4 color;
+ 
+// Task 3.2c FS: get vertex position from VS
+in vec4 vertexPosition_worldspace;
+ 
+uniform vec4 planeCoeffs;
+uniform float y_of_sphere;
+uniform vec4 detachmentDisplacement;
+ 
+void main()
+{
+    color = vec4(0.0, 0.0, 0.0, 1.0);
+ 
+    // Task 3.2e FS: find on which side of the plane is the vertex and
+    // apply different colors (red above 0.02, blue below -0.02 else blue)
+    
+    // Task 4.1d: discard the fragments that are between the two halves
+    //*/
+    if ((dot(vertexPosition_worldspace,planeCoeffs) < dot(planeCoeffs,detachmentDisplacement-0.005)) && (dot(vertexPosition_worldspace,planeCoeffs) > -dot(planeCoeffs,detachmentDisplacement+0.005)))
+	{
+        color = vec4(1.0, 1.0, 0.0, 1.0);
+		//discard;
+    }
+    else
+	{
+		// Homework 1: assign color based on distance from plane
+
+		if (dot(vertexPosition_worldspace,planeCoeffs)>0.0002)
+		{
+				color = vec4(0.0, 1.0, 0.0, 1.0);	
+				}
+		else if (dot(vertexPosition_worldspace,planeCoeffs)<-0.0002)
+		{
+			color = vec4(0.0, 0.0, 1.0, 1.0);		
+			}
+		else
+		{
+			color = vec4(0.0, 0.0, 1.0, 1.0);		
+			}
+    }
+    //*/
+   
+}

@@ -1,0 +1,84 @@
+#version 330 core
+ 
+
+in vec4 vertex_position_worldspace;
+in vec3 vertex_normal_modelspace1;
+in vec2 vertex_UV1;
+in mat4 modify;
+
+uniform sampler2D diffuseColorSampler;
+uniform vec3 light_position_worldspace;
+uniform mat4 V;
+uniform sampler2D specularColorSampler;
+ 
+// output data
+out vec4 fragment_color;
+ 
+
+void main()
+{
+    // default color
+    fragment_color = vec4(1, 1, 1, 1);
+ 
+    // Task 2.1: model light; specular (Ls), diffuse (Ld) and ambient (La) color
+    vec4 Ls = vec4(1,1,1,1);
+    vec4 Ld = vec4(1,1,1,1);
+    vec4 La = vec4(1,1,1,1);
+   
+    
+    vec4 Ks = vec4( 0.628281, 0.555802, 0.366065,1);
+    vec4 Kd = vec4(0.75164, 0.60648, 0.22648,1);
+    vec4 Ka = vec4(0.24725, 0.1995, 0.0745,1);
+    float Ns = 51.2;
+ 
+ 
+    // Task 6.5: assign material properties from the texture maps
+    //*/
+    Ks = vec4(texture(specularColorSampler, vertex_UV1).rgb,1.0);
+    Kd = vec4(texture(diffuseColorSampler, vertex_UV1).rgb,1.0);
+    Ka = vec4(0.1, 0.1, 0.1,1.0);
+    Ns = 10;
+    //*/
+ 
+    vec4 Ia = Ka*La;
+
+    vec3 light_position_cameraspace = (V * vec4(light_position_worldspace,1)).xyz;
+    vec3 vertex_position_cameraspace = (V * modify * vec4(vertex_position_worldspace)).xyz;
+    vec3 vertex_normal_cameraspace = (V * modify * vec4(vertex_normal_modelspace1,1)).xyz;
+ 
+
+ 	vec3 N = normalize((V*modify*vec4(vertex_normal_modelspace1,0)).xyz);
+
+    vec3 L = normalize(light_position_cameraspace-vertex_position_cameraspace);
+
+    
+    float cos_theta = clamp(dot(L,N),0.0,1.0);
+
+    vec4 Id = Ld * Kd * cos_theta;
+
+    vec3 R = normalize(-L+2*N*dot(L,N));
+
+    vec3 E = normalize(-vertex_position_cameraspace);
+
+    float cos_alpha = clamp(dot(E,R),0,1);
+
+ 
+    float specular_factor = pow(cos_alpha,Ns);
+    vec4 Is = Ks * specular_factor;
+   
+    vec3 dist = light_position_cameraspace - vertex_position_cameraspace;
+    float l_power = 40/(pow(dist.x,2)+pow(dist.y,2)+pow(dist.z,2));
+
+
+	vec3 spot_direction = normalize (vec3 (0.0, 0.0, -1.0));
+	float spot_dot = dot (spot_direction, -L );
+	float spot_arc = 1.0f - 5.0f / 90.0f;
+
+	
+	float spot_factor = 1.0f;
+	Id = Id * l_power*spot_factor;
+	Is = Is * l_power*spot_factor;
+
+    fragment_color = Id + Is + Ia;    
+	
+}

@@ -1,0 +1,52 @@
+#version 330 core
+ 
+// input vertex and UV coordinates, different for all executions of this shader
+layout(location = 0) in vec3 vertexPosition_modelspace;
+layout(location = 1) in vec3 vertexNormal_modelspace;
+layout(location = 2) in vec2 vertexUV;
+ 
+// model view projection matrix
+uniform mat4 P;
+uniform mat4 V;
+uniform mat4 M;
+ 
+// Task 3.2a VS: propagate vertex coordinates (world space) to fragment shader
+//varying vertexPosition_worldspace;
+
+// Task 4.1b VS:
+uniform vec4 detachmentDisplacement;
+uniform vec4 planeCoeffs;
+uniform float y_of_sphere;
+
+//mat4 modify;
+out vec3 vertex_normal_modelspace;
+out vec2 vertex_UV;
+
+void main()
+{
+    // assign vertex position
+
+    vec4 coordinates_modelspace = vec4(vertexPosition_modelspace, 1.0);
+	//modify = M;
+ 	if (dot(planeCoeffs,M *coordinates_modelspace) >0)
+    {
+       //coordinates_modelspace = coordinates_modelspace+ 333.33*detachmentDisplacement;
+
+    }
+    else if (dot(planeCoeffs,M *coordinates_modelspace) <0 )
+    {
+        //coordinates_modelspace = coordinates_modelspace - 333.33*detachmentDisplacement;
+		//modify[3][1] = y_of_sphere;
+
+		}
+	else{
+		//coordinates_modelspace = coordinates_modelspace - 333.33*detachmentDisplacement;
+
+	}
+
+	//vertexPosition_worldspace = modify * coordinates_modelspace;
+	vertex_normal_modelspace = vertexNormal_modelspace;
+	vertex_UV = vertexUV;
+	gl_Position = coordinates_modelspace;
+
+}

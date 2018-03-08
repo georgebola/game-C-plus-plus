@@ -1,0 +1,50 @@
+#version 330 core
+
+// input vertex, UV coordinates and normal
+layout(location = 0) in vec3 vertexPosition_modelspace;
+layout(location = 1) in vec3 vertexNormal_modelspace;
+layout(location = 2) in vec2 vertexUV;
+// Task 2.1b: skinning variables
+layout(location = 3) in float vertexBoneIndex;
+
+// Output data ; will be interpolated for each fragment.
+out vec3 vertex_position_worldspace;
+out vec3 vertex_position_cameraspace;
+out vec3 vertex_normal_cameraspace;
+out vec2 vertex_UV;
+
+// Values that stay constant for the whole mesh.
+uniform mat4 V;
+uniform mat4 M;
+uniform mat4 P;
+
+// Task 2.1b: skinning variables
+const int BONE_TRANSFORMATIONS = 20; // something big enough, but not too big
+uniform int useSkinning = 1;  // use skinning or not
+uniform mat4 boneTransformations[BONE_TRANSFORMATIONS]; // bone transformations
+uniform mat4 scaling;
+
+void main() {
+    // Task 2.1c: for the skinning make sure to transform both coordinates
+    // and normals of the vertex as defined in local space (model space)
+    vec4 vertexPositionNew_modelspace = vec4(vertexPosition_modelspace, 1.0);
+    vec4 vertexNormalNew_modelspace = vec4(vertexNormal_modelspace, 0.0);
+    if (useSkinning == 1) {
+         vertexPositionNew_modelspace = boneTransformations[int(vertexBoneIndex)] * vertexPositionNew_modelspace ;
+         vertexNormalNew_modelspace = boneTransformations[int(vertexBoneIndex)] * vertexNormalNew_modelspace ;
+    }
+
+    // vertex position
+    gl_Position =  P * V * M * vertexPositionNew_modelspace;
+    gl_PointSize = 10;
+
+	if (useSkinning == 1) {
+         gl_Position =  P * V * M * vertexPositionNew_modelspace;
+    }
+
+    // FS
+    vertex_position_worldspace = (M * vertexPositionNew_modelspace).xyz;
+    vertex_position_cameraspace = (V * M * vertexPositionNew_modelspace).xyz;
+    vertex_normal_cameraspace = (V * M * vertexNormalNew_modelspace).xyz; 
+    vertex_UV = vertexUV;
+}

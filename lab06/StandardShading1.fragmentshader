@@ -1,0 +1,143 @@
+#version 330 core
+ 
+// interpolated values from the vertex shaders (vertex_position_modelspace,
+// vertex_normal_modelspace and vertex_UV coordinates)
+in vec3 vertex_position_modelspace;
+in vec3 vertex_normal_modelspace;
+in vec2 vertex_UV;
+
+// uniform variables (lightPosition_worldspace, V, M)
+uniform vec3 light_position_worldspace;
+uniform mat4 V;
+uniform mat4 M;
+ 
+// Task 5.3: define uniform variables for the texture coordinates
+// (diffuseColorSampler, specularColorSampler)
+uniform sampler2D diffuseColorSampler;
+
+uniform sampler2D specularColorSampler;
+ 
+// output data
+out vec4 fragment_color;
+ 
+void main()
+{
+    // default color
+    fragment_color = vec4(1, 1, 1, 1);
+ 
+    // Task 2.1: model light; specular (Ls), diffuse (Ld) and ambient (La) color
+    vec4 Ls = vec4(1,1,1,1);
+    vec4 Ld = vec4(1,1,1,1);
+    vec4 La = vec4(1,1,1,1);
+   
+    // Task 2.2: model material properties; specular (Ks), diffuse (Kd),
+    // ambient (Ka) color and specular exponent (Ns) (gold material)
+    /* Gold
+        specular  0.628281, 0.555802, 0.366065
+        diffuse   0.75164, 0.60648, 0.22648
+        ambient   0.24725, 0.1995, 0.0745
+        shininess 51.2
+    */
+    vec4 Ks = vec4( 0.628281, 0.555802, 0.366065,1);
+    vec4 Kd = vec4(0.75164, 0.60648, 0.22648,1);
+    vec4 Ka = vec4(0.24725, 0.1995, 0.0745,1);
+    float Ns = 51.2;
+ 
+ 
+    // Task 6.5: assign material properties from the texture maps
+    //*/
+    Ks = vec4(texture(specularColorSampler, vertex_UV).rgb,1.0);
+    Kd = vec4(texture(diffuseColorSampler, vertex_UV).rgb,1.0);
+    Ka = vec4(0.1, 0.1, 0.1,1.0);
+    Ns = 10;
+    //*/
+ 
+    // Task 2.3: model ambient intensity (Ia)
+    vec4 Ia = Ka*La;
+    // Task 3: model diffuse intensity
+    vec3 light_position_cameraspace = (V * vec4(light_position_worldspace,1)).xyz;
+    vec3 vertex_position_cameraspace = (V * M * vec4(vertex_position_modelspace,1)).xyz;
+    vec3 vertex_normal_cameraspace = (V * M * vec4(vertex_normal_modelspace,1)).xyz;
+ 
+    // Task 3.3: transform light position, vertex position and vertex normal
+    // in camera space (N). Attention: vertex normal is a directional vector
+    // (Homogeneous Transformations).
+
+ 	vec3 N = normalize((V*M*vec4(vertex_normal_modelspace,0)).xyz);
+
+    // Task 3.4: calculate distance to light and normalized direction (L) in camera space
+    vec3 L = normalize(light_position_cameraspace-vertex_position_cameraspace);
+
+	// Task 3.5: compute cos(theta)
+    // cosine of the angle between the normal and the light direction,
+    // clamped above 0; use clamp(float, min, max)
+    //  - light is at the vertical of the triangle -> 1
+    //  - light is perpendicular to the triangle -> 0
+    //  - light is behind the triangle -> 0
+    float cos_theta = clamp(dot(L,N),0.0,1.0);
+
+    // Task 3.6: calculate the diffuse intensity and the new fragment color
+    vec4 Id = Ld * Kd * cos_theta;
+    // Task 4: model specular intensity
+    // Task 4.1: compute reflexion direction (R) in camera space
+    vec3 R = normalize(-L+2*N*dot(L,N));
+
+    // Task 4.2: compute surface to viewer direction (E) in camera space
+    vec3 E = normalize(-vertex_position_cameraspace);
+
+    // Task 4.3: compute cos(alpha)
+    float cos_alpha = clamp(dot(E,R),0,1);
+
+    // cosine of the angle between the Eye vector and the Reflect vector,
+    // clamped to 0; use clamp(float, min, max)
+    //  - Looking into the reflection -> 1
+    //  - Looking elsewhere -> < 1
+ 
+    // Task 4.4: calculate specular factor cos(a)^Ns
+    float specular_factor = pow(cos_alpha,Ns);
+    // Task 4.5: calculate the specular intensity and the new fragment color
+    vec4 Is = Ks * specular_factor;
+   
+    // Task 5: model the light distance effect (add a light_power parameter).
+    // Change camera position to verify the correct behavior.
+    vec3 dist = light_position_cameraspace - vertex_position_cameraspace;
+    float l_power = 40/(pow(dist.x,2)+pow(dist.y,2)+pow(dist.z,2));
+
+
+	vec3 spot_direction = normalize (vec3 (0.0, 0.0, -1.0));
+	float spot_dot = dot (spot_direction, -L );
+	float spot_arc = 1.0f - 5.0f / 90.0f;
+
+	
+	float spot_factor = 1.0f;
+	/*
+	if (spot_dot < spot_arc) {
+  		spot_factor = 0.0f;
+	}
+	*/
+
+	// this is for a linear roll-off of the spot
+	//float spot_factor = (spot_dot - spot_arc) / (1.0 - spot_arc);
+	//spot_factor = clamp (spot_factor, 0.0, 1.0);
+
+	Id = Id * l_power*spot_factor;
+	Is = Is * l_power*spot_factor;
+
+    fragment_color = Id + Is + Ia;    
+	/*
+	add gama
+	vec3 gamma = vec3(3.0/2.2);
+	fragment_color = vec4(pow(fragment_color.x, gamma.x),
+                  pow(fragment_color.y, gamma.y),
+                  pow(fragment_color.z, gamma.z),
+				  1.0);
+	*/
+	
+
+    // Homework 3: make light properties as uniform variables and use the keyboard  
+    // keys to adjust them (position, light color and power).
+
+	//spotlight
+	//vec3 spot_dir_eye = normalize (vertex_position_cameraspace - light_position_cameraspace); 
+	//vec3 dir_to_surface_eye = normalize (vertex_position_cameraspace - light_position_cameraspace);
+}
